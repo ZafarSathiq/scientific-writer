@@ -17,6 +17,7 @@ from claude_agent_sdk.types import HookMatcher, StopHookInput, HookContext
 
 from .core import (
     get_api_key,
+    get_gemini_api_key,
     load_system_instructions,
     ensure_output_folder,
     get_data_files,
@@ -57,12 +58,13 @@ def create_completion_check_stop_hook(auto_continue: bool = True):
     return completion_check_stop_hook
 
 
-async def main(track_token_usage: bool = False) -> Optional[TokenUsage]:
+async def main(track_token_usage: bool = False, model: str = "claude-sonnet-4-6") -> Optional[TokenUsage]:
     """
     Main CLI loop for the scientific writer.
     
     Args:
         track_token_usage: If True, track and return token usage statistics
+        model: The model to use for generation
         
     Returns:
         TokenUsage object if track_token_usage is True, None otherwise
@@ -74,9 +76,16 @@ async def main(track_token_usage: bool = False) -> Optional[TokenUsage]:
     if env_file.exists():
         load_dotenv(dotenv_path=env_file, override=True)
     
+    # Determine if using Gemini
+    from .api import is_gemini_model
+    using_gemini = is_gemini_model(model)
+
     # Get API key (verify it exists)
     try:
-        get_api_key()
+        if using_gemini:
+            get_gemini_api_key()
+        else:
+            get_api_key()
     except ValueError as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -120,7 +129,7 @@ IMPORTANT - CONVERSATION CONTINUITY:
     # Configure agent options with stop hook for completion checking
     options = ClaudeAgentOptions(
         system_prompt=system_instructions,
-        model="claude-sonnet-4-6",
+        model=model,
         allowed_tools=["Read", "Write", "Edit", "Bash", "WebSearch", "research-lookup"],
         permission_mode="bypassPermissions",  # Execute immediately without approval prompts
         setting_sources=["project"],  # Load skills from project .claude directory
@@ -417,7 +426,15 @@ User request: {user_input}"""
             
             # Send query
             print()  # Add blank line before response
-            async for message in query(prompt=contextual_prompt, options=options):
+
+            # Select query function based on model
+            if using_gemini:
+                from .gemini_backend import gemini_query
+                query_func = gemini_query
+            else:
+                query_func = query
+
+            async for message in query_func(prompt=contextual_prompt, options=options):
                 # Track token usage silently
                 if track_token_usage and hasattr(message, "usage") and message.usage:
                     usage = message.usage
@@ -532,8 +549,14 @@ def _print_help():
 
 def cli_main():
     """Entry point for the CLI script."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Scientific Writer CLI")
+    parser.add_argument("--model", default="claude-sonnet-4-6", help="Model to use (e.g., claude-sonnet-4-6, gemini-1.5-flash, gemini-2.0-flash-exp)")
+    parser.add_argument("--track-usage", action="store_true", help="Track token usage")
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(track_token_usage=args.track_usage, model=args.model))
     except KeyboardInterrupt:
         print("\n\nExiting...")
         sys.exit(0)

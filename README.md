@@ -37,9 +37,11 @@ uv sync
 ```bash
 # .env file (recommended)
 echo "ANTHROPIC_API_KEY=your_key" > .env
+echo "GEMINI_API_KEY=your_gemini_key" >> .env
 echo "OPENROUTER_API_KEY=your_openrouter_key" >> .env
 # or export in your shell
 export ANTHROPIC_API_KEY='your_key'
+export GEMINI_API_KEY='your_gemini_key'
 ```
 
 ### Usage Options
@@ -62,7 +64,10 @@ After installing the plugin and running `/scientific-writer:init`, simply ask Cl
 #### Use the CLI
 ```bash
 # If installed via pip
-scientific-writer
+scientific-writer --model claude-sonnet-4-6
+
+# Use Gemini
+scientific-writer --model gemini-1.5-flash
 
 # If installed from source with uv
 uv run scientific-writer

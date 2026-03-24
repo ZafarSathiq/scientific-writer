@@ -57,6 +57,31 @@ def get_api_key(api_key: Optional[str] = None) -> str:
     return env_key
 
 
+def get_gemini_api_key(api_key: Optional[str] = None) -> str:
+    """
+    Get the Google/Gemini API key.
+
+    Args:
+        api_key: Optional API key to use. If not provided, reads from environment.
+
+    Returns:
+        The API key.
+
+    Raises:
+        ValueError: If API key is not found.
+    """
+    if api_key:
+        return api_key
+
+    env_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not env_key:
+        raise ValueError(
+            "GEMINI_API_KEY or GOOGLE_API_KEY not found. Either pass api_key "
+            "parameter or set GEMINI_API_KEY environment variable."
+        )
+    return env_key
+
+
 def load_system_instructions(work_dir: Path) -> str:
     """
     Load system instructions from .claude/WRITER.md in the working directory.
