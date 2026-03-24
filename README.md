@@ -14,7 +14,8 @@ Scientific Writer performs comprehensive research before writing, ensuring every
 
 ### Prerequisites
 - Python 3.10-3.12
-- ANTHROPIC_API_KEY (required), OPENROUTER_API_KEY (optional for research lookup)
+- ANTHROPIC_API_KEY (required for Claude) or GEMINI_API_KEY (required for Gemini)
+- OPENROUTER_API_KEY (optional for research lookup)
 
 ### Installation Options
 
@@ -37,9 +38,29 @@ uv sync
 ```bash
 # .env file (recommended)
 echo "ANTHROPIC_API_KEY=your_key" > .env
+echo "GEMINI_API_KEY=your_gemini_key" >> .env
 echo "OPENROUTER_API_KEY=your_openrouter_key" >> .env
+
 # or export in your shell
 export ANTHROPIC_API_KEY='your_key'
+export GEMINI_API_KEY='your_gemini_key'
+```
+
+### Gemini Support
+Scientific Writer now supports Google's Gemini models via the Google AI SDK.
+To use Gemini, set your `GEMINI_API_KEY` and specify a Gemini model:
+
+```bash
+# Using the CLI
+scientific-writer --model gemini-1.5-flash
+scientific-writer --model gemini-2.0-flash-exp
+
+# Using the Python API
+async for update in generate_paper(
+    query="Create a paper...",
+    model="gemini-1.5-flash"
+):
+    ...
 ```
 
 ### Usage Options
@@ -62,7 +83,10 @@ After installing the plugin and running `/scientific-writer:init`, simply ask Cl
 #### Use the CLI
 ```bash
 # If installed via pip
-scientific-writer
+scientific-writer --model claude-sonnet-4-6
+
+# Use Gemini
+scientific-writer --model gemini-1.5-flash
 
 # If installed from source with uv
 uv run scientific-writer
@@ -185,6 +209,7 @@ See the [Plugin Testing Guide](#plugin-testing-local-development) below for loca
 - **Scientific schematics** powered by Nano Banana Pro (CONSORT diagrams, neural architectures, biological pathways, circuit diagrams)
 
 ### 🤖 AI-Powered Capabilities
+- **Multi-Model Support** - Generate documents using Claude (Anthropic) or Gemini (Google)
 - **Real-time research lookup** using Perplexity Sonar Pro Search (via OpenRouter)
 - **AI-powered diagram generation** with Nano Banana Pro - create any scientific diagram from natural language descriptions
 - **Intelligent paper detection** - automatically identifies references to existing papers

@@ -13,6 +13,7 @@ from claude_agent_sdk.types import HookMatcher, StopHookInput, HookContext
 
 from .core import (
     get_api_key,
+    get_gemini_api_key,
     load_system_instructions,
     ensure_output_folder,
     get_data_files,
@@ -35,6 +36,11 @@ EFFORT_LEVEL_MODELS = {
     "medium": "claude-sonnet-4-6",
     "high": "claude-sonnet-4-6",
 }
+
+
+def is_gemini_model(model: str) -> bool:
+    """Check if the model is a Gemini model."""
+    return model.lower().startswith("gemini-")
 
 
 def create_completion_check_stop_hook(auto_continue: bool = True):
@@ -141,7 +147,10 @@ async def generate_paper(
     
     # Get API key
     try:
-        api_key_value = get_api_key(api_key)
+        if is_gemini_model(model):
+            api_key_value = get_gemini_api_key(api_key)
+        else:
+            api_key_value = get_api_key(api_key)
     except ValueError as e:
         yield _create_error_result(str(e))
         return
@@ -238,7 +247,15 @@ IMPORTANT - CONVERSATION CONTINUITY:
     # Execute query
     try:
         accumulated_text = ""
-        async for message in claude_query(prompt=query, options=options):
+
+        # Select query function based on model
+        if is_gemini_model(model):
+            from .gemini_backend import gemini_query
+            query_func = gemini_query
+        else:
+            query_func = claude_query
+
+        async for message in query_func(prompt=query, options=options):
             # Track token usage if enabled
             if track_token_usage and hasattr(message, "usage") and message.usage:
                 usage = message.usage
